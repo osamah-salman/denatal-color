@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tooth Color Predictor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f8f8;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #333;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6; /* Blue-500 */
+        }
+        .predict-button {
+            background-color: #3b82f6; /* Blue-500 */
+            color: white;
+            padding: 0.85rem 1.75rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+            cursor: pointer;
+        }
+        .predict-button:hover {
+            background-color: #2563eb; /* Blue-600 */
+            transform: translateY(-1px);
+        }
+        .predict-button:active {
+            background-color: #1d4ed8; /* Blue-700 */
+            transform: translateY(0);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-label {
+            font-weight: 500;
+            color: #4a5568;
+        }
+        .result-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .error-message {
+            background-color: #fee2e2; /* Red-100 */
+            color: #dc2626; /* Red-600 */
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+    <div class="container card">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Tooth Color Prediction</h1>
+
+        <div id="errorMessage" class="error-message hidden" role="alert">
+            <!-- Error messages will be displayed here -->
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label for="serialNumber" class="block text-gray-700 text-sm font-medium mb-2">Tooth Serial Number</label>
+                <input type="number" id="serialNumber" class="input-field" placeholder="e.g., 12345" required>
+            </div>
+            <div>
+                <label for="locationNumber" class="block text-gray-700 text-sm font-medium mb-2">Tooth Location Number</label>
+                <input type="number" id="locationNumber" class="input-field" placeholder="e.g., 6" required>
+            </div>
+            <div class="md:col-span-2">
+                <label for="size" class="block text-gray-700 text-sm font-medium mb-2">Size (e.g., mm)</label>
+                <input type="number" id="size" class="input-field" step="0.01" placeholder="e.g., 15.75" required>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-10">
+            <button id="predictButton" class="predict-button flex items-center justify-center gap-2">
+                <span id="buttonText">Predict Color</span>
+                <div id="loadingSpinner" class="loading-spinner hidden"></div>
+            </button>
+        </div>
+
+        <div id="predictionResults" class="hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Prediction Results</h2>
+            <div class="space-y-4">
+                <div class="result-item">
+                    <span class="result-label">L* (Lightness):</span>
+                    <span id="L_star" class="result-value">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">a* (Red/Green):</span>
+                    <span id="a_star" class="result-value">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">b* (Yellow/Blue):</span>
+                    <span id="b_star" class="result-value">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">C* (Chroma/Saturation):</span>
+                    <span id="C_star" class="result-value">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">h (Hue Angle):</span>
+                    <span id="h_angle" class="result-value">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const serialNumberInput = document.getElementById('serialNumber');
+        const locationNumberInput = document.getElementById('locationNumber');
+        const sizeInput = document.getElementById('size');
+        const predictButton = document.getElementById('predictButton');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const predictionResultsDiv = document.getElementById('predictionResults');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        // Result display elements
+        const L_star_span = document.getElementById('L_star');
+        const a_star_span = document.getElementById('a_star');
+        const b_star_span = document.getElementById('b_star');
+        const C_star_span = document.getElementById('C_star');
+        const h_angle_span = document.getElementById('h_angle');
+
+        // Function to show/hide loading spinner and update button text
+        function toggleLoading(isLoading) {
+            if (isLoading) {
+                buttonText.textContent = 'Predicting...';
+                loadingSpinner.classList.remove('hidden');
+                predictButton.disabled = true;
+            } else {
+                buttonText.textContent = 'Predict Color';
+                loadingSpinner.classList.add('hidden');
+                predictButton.disabled = false;
+            }
+        }
+
+        // Function to display error messages
+        function showErrorMessage(message) {
+            errorMessageDiv.textContent = message;
+            errorMessageDiv.classList.remove('hidden');
+        }
+
+        // Function to hide error messages
+        function hideErrorMessage() {
+            errorMessageDiv.classList.add('hidden');
+            errorMessageDiv.textContent = '';
+        }
+
+        // Function to clear prediction results
+        function clearResults() {
+            L_star_span.textContent = '--';
+            a_star_span.textContent = '--';
+            b_star_span.textContent = '--';
+            C_star_span.textContent = '--';
+            h_angle_span.textContent = '--';
+            predictionResultsDiv.classList.add('hidden');
+        }
+
+        // Event listener for the predict button
+        predictButton.addEventListener('click', async () => {
+            hideErrorMessage(); // Clear previous errors
+            clearResults(); // Clear previous results
+
+            // Get input values
+            const serialNumber = serialNumberInput.value;
+            const locationNumber = locationNumberInput.value;
+            const size = sizeInput.value;
+
+            // Basic client-side validation
+            if (!serialNumber || !locationNumber || !size) {
+                showErrorMessage('Please fill in all input fields.');
+                return;
+            }
+
+            // Convert to numbers for sending to backend (backend will re-validate types)
+            const payload = {
+                serial_number: parseInt(serialNumber),
+                location_number: parseInt(locationNumber),
+                size: parseFloat(size)
+            };
+
+            toggleLoading(true); // Show loading spinner
+
+            try {
+                // IMPORTANT: Replace with your actual backend API URL
+                // If running Flask locally, it's typically [http://127.0.0.1:5000/predict](http://127.0.0.1:5000/predict)
+                // For deployed apps, it will be your App Platform/Render service URL
+                const backendUrl = '[http://127.0.0.1:5000/predict](http://127.0.0.1:5000/predict)'; // <<<<<<< CHANGE THIS FOR DEPLOYMENT
+
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Display predictions
+                    const predictions = result.predictions;
+                    L_star_span.textContent = predictions.L_star;
+                    a_star_span.textContent = predictions.a_star;
+                    b_star_span.textContent = predictions.b_star;
+                    C_star_span.textContent = predictions.C_star;
+                    h_angle_span.textContent = predictions.h_angle;
+                    predictionResultsDiv.classList.remove('hidden'); // Show results section
+                } else {
+                    // Handle API errors
+                    showErrorMessage(result.error || 'An unknown error occurred during prediction.');
+                }
+            } catch (error) {
+                // Handle network errors or issues with the fetch request
+                console.error('Error fetching prediction:', error);
+                showErrorMessage('Failed to connect to the prediction service. Please try again later.');
+            } finally {
+                toggleLoading(false); // Hide loading spinner
+            }
+        });
+    </script>
+</body>
+</html>
