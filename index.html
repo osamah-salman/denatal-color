@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tooth Color Predictor</title>
     <!-- Tailwind CSS CDN -->
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -34,14 +34,17 @@
             outline: none;
             border-color: #3b82f6; /* Blue-500 */
         }
-        .predict-button {
+        .input-field.input-error {
+            border-color: #ef4444; /* Red-500 */
+        }
+        .predict-button, .clear-button {
             background-color: #3b82f6; /* Blue-500 */
             color: white;
             padding: 0.85rem 1.75rem;
             border-radius: 8px;
             font-size: 1.1rem;
             font-weight: 600;
-            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, box-shadow 0.2s ease-in-out;
             box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
             cursor: pointer;
         }
@@ -51,6 +54,18 @@
         }
         .predict-button:active {
             background-color: #1d4ed8; /* Blue-700 */
+            transform: translateY(0);
+        }
+        .clear-button {
+            background-color: #6b7280; /* Gray-500 */
+            box-shadow: 0 4px 8px rgba(107, 114, 128, 0.2);
+        }
+        .clear-button:hover {
+            background-color: #4b5563; /* Gray-600 */
+            transform: translateY(-1px);
+        }
+        .clear-button:active {
+            background-color: #374151; /* Gray-700 */
             transform: translateY(0);
         }
         .loading-spinner {
@@ -80,8 +95,9 @@
             color: #4a5568;
         }
         .result-value {
-            font-weight: 600;
-            color: #2d3748;
+            font-weight: 700; /* Bolder for emphasis */
+            color: #1a202c; /* Darker for better contrast */
+            font-size: 1.1rem; /* Slightly larger */
         }
         .error-message {
             background-color: #fee2e2; /* Red-100 */
@@ -90,6 +106,15 @@
             border-radius: 8px;
             margin-bottom: 1.5rem;
             font-weight: 500;
+            text-align: center;
+        }
+        /* Fade-in animation for results */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
         }
     </style>
 </head>
@@ -97,7 +122,7 @@
     <div class="container card">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Tooth Color Prediction</h1>
 
-        <div id="errorMessage" class="error-message hidden" role="alert">
+        <div id="errorMessage" class="error-message hidden" role="alert" aria-live="polite">
             <!-- Error messages will be displayed here -->
         </div>
 
@@ -116,14 +141,17 @@
             </div>
         </div>
 
-        <div class="flex justify-center mb-10">
+        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-10">
             <button id="predictButton" class="predict-button flex items-center justify-center gap-2">
                 <span id="buttonText">Predict Color</span>
                 <div id="loadingSpinner" class="loading-spinner hidden"></div>
             </button>
+            <button id="clearButton" class="clear-button flex items-center justify-center gap-2">
+                Clear
+            </button>
         </div>
 
-        <div id="predictionResults" class="hidden">
+        <div id="predictionResults" class="hidden fade-in" aria-live="polite">
             <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Prediction Results</h2>
             <div class="space-y-4">
                 <div class="result-item">
@@ -156,6 +184,7 @@
         const locationNumberInput = document.getElementById('locationNumber');
         const sizeInput = document.getElementById('size');
         const predictButton = document.getElementById('predictButton');
+        const clearButton = document.getElementById('clearButton'); /* New Clear button */
         const buttonText = document.getElementById('buttonText');
         const loadingSpinner = document.getElementById('loadingSpinner');
         const predictionResultsDiv = document.getElementById('predictionResults');
@@ -174,26 +203,35 @@
                 buttonText.textContent = 'Predicting...';
                 loadingSpinner.classList.remove('hidden');
                 predictButton.disabled = true;
+                clearButton.disabled = true; /* Disable clear button during prediction */
             } else {
                 buttonText.textContent = 'Predict Color';
                 loadingSpinner.classList.add('hidden');
                 predictButton.disabled = false;
+                clearButton.disabled = false; /* Re-enable clear button */
             }
         }
 
-        // Function to display error messages
-        function showErrorMessage(message) {
+        // Function to display error messages with optional input highlighting
+        function showErrorMessage(message, inputElement = null) {
             errorMessageDiv.textContent = message;
             errorMessageDiv.classList.remove('hidden');
+            if (inputElement) {
+                inputElement.classList.add('input-error');
+            }
         }
 
-        // Function to hide error messages
+        // Function to hide error messages and clear input error styling
         function hideErrorMessage() {
             errorMessageDiv.classList.add('hidden');
             errorMessageDiv.textContent = '';
+            // Remove error styling from all input fields
+            document.querySelectorAll('.input-field').forEach(input => {
+                input.classList.remove('input-error');
+            });
         }
 
-        // Function to clear prediction results
+        // Function to clear prediction results and hide the section
         function clearResults() {
             L_star_span.textContent = '--';
             a_star_span.textContent = '--';
@@ -201,6 +239,16 @@
             C_star_span.textContent = '--';
             h_angle_span.textContent = '--';
             predictionResultsDiv.classList.add('hidden');
+            predictionResultsDiv.classList.remove('fade-in'); /* Remove animation class for next appearance */
+        }
+
+        // Function to clear all input fields
+        function clearInputs() {
+            serialNumberInput.value = '';
+            locationNumberInput.value = '';
+            sizeInput.value = '';
+            hideErrorMessage();
+            clearResults();
         }
 
         // Event listener for the predict button
@@ -209,13 +257,21 @@
             clearResults(); // Clear previous results
 
             // Get input values
-            const serialNumber = serialNumberInput.value;
-            const locationNumber = locationNumberInput.value;
-            const size = sizeInput.value;
+            const serialNumber = serialNumberInput.value.trim();
+            const locationNumber = locationNumberInput.value.trim();
+            const size = sizeInput.value.trim();
 
-            // Basic client-side validation
-            if (!serialNumber || !locationNumber || !size) {
-                showErrorMessage('Please fill in all input fields.');
+            // Basic client-side validation with specific feedback
+            if (!serialNumber) {
+                showErrorMessage('Please enter the Tooth Serial Number.', serialNumberInput);
+                return;
+            }
+            if (!locationNumber) {
+                showErrorMessage('Please enter the Tooth Location Number.', locationNumberInput);
+                return;
+            }
+            if (!size) {
+                showErrorMessage('Please enter the Size.', sizeInput);
                 return;
             }
 
@@ -230,9 +286,9 @@
 
             try {
                 // IMPORTANT: Replace with your actual backend API URL
-                // If running Flask locally, it's typically [http://127.0.0.1:5000/predict](http://127.0.0.1:5000/predict)
+                // If running Flask locally, it's typically http://127.0.0.1:5000/predict
                 // For deployed apps, it will be your App Platform/Render service URL
-                const backendUrl = '[http://127.0.0.1:5000/predict](http://127.0.0.1:5000/predict)'; // <<<<<<< CHANGE THIS FOR DEPLOYMENT
+                const backendUrl = 'http://127.0.0.1:5000/predict'; // <<<<<<< CHANGE THIS FOR DEPLOYMENT
 
                 const response = await fetch(backendUrl, {
                     method: 'POST',
@@ -253,6 +309,8 @@
                     C_star_span.textContent = predictions.C_star;
                     h_angle_span.textContent = predictions.h_angle;
                     predictionResultsDiv.classList.remove('hidden'); // Show results section
+                    predictionResultsDiv.classList.add('fade-in'); // Trigger fade-in animation
+                    clearInputs(); // Clear inputs after successful prediction
                 } else {
                     // Handle API errors
                     showErrorMessage(result.error || 'An unknown error occurred during prediction.');
@@ -260,11 +318,14 @@
             } catch (error) {
                 // Handle network errors or issues with the fetch request
                 console.error('Error fetching prediction:', error);
-                showErrorMessage('Failed to connect to the prediction service. Please try again later.');
+                showErrorMessage('Failed to connect to the prediction service. Please ensure the backend is running and the URL is correct.');
             } finally {
                 toggleLoading(false); // Hide loading spinner
             }
         });
+
+        // Event listener for the clear button
+        clearButton.addEventListener('click', clearInputs);
     </script>
 </body>
 </html>
