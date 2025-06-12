@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tooth Color Predictor</title>
-    <!-- Tailwind CSS CDN -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Tooth  CIELAB Color Predictor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -32,13 +31,13 @@
         }
         .input-field:focus {
             outline: none;
-            border-color: #3b82f6; /* Blue-500 */
+            border-color: #3b82f6;
         }
         .input-field.input-error {
-            border-color: #ef4444; /* Red-500 */
+            border-color: #ef4444;
         }
         .predict-button, .clear-button {
-            background-color: #3b82f6; /* Blue-500 */
+            background-color: #3b82f6;
             color: white;
             padding: 0.85rem 1.75rem;
             border-radius: 8px;
@@ -49,23 +48,23 @@
             cursor: pointer;
         }
         .predict-button:hover {
-            background-color: #2563eb; /* Blue-600 */
+            background-color: #2563eb;
             transform: translateY(-1px);
         }
         .predict-button:active {
-            background-color: #1d4ed8; /* Blue-700 */
+            background-color: #1d4ed8;
             transform: translateY(0);
         }
         .clear-button {
-            background-color: #6b7280; /* Gray-500 */
+            background-color: #6b7280;
             box-shadow: 0 4px 8px rgba(107, 114, 128, 0.2);
         }
         .clear-button:hover {
-            background-color: #4b5563; /* Gray-600 */
+            background-color: #4b5563;
             transform: translateY(-1px);
         }
         .clear-button:active {
-            background-color: #374151; /* Gray-700 */
+            background-color: #374151;
             transform: translateY(0);
         }
         .loading-spinner {
@@ -95,20 +94,19 @@
             color: #4a5568;
         }
         .result-value {
-            font-weight: 700; /* Bolder for emphasis */
-            color: #1a202c; /* Darker for better contrast */
-            font-size: 1.1rem; /* Slightly larger */
+            font-weight: 700;
+            color: #1a202c;
+            font-size: 1.1rem;
         }
         .error-message {
-            background-color: #fee2e2; /* Red-100 */
-            color: #dc2626; /* Red-600 */
+            background-color: #fee2e2;
+            color: #dc2626;
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1.5rem;
             font-weight: 500;
             text-align: center;
         }
-        /* Fade-in animation for results */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -122,22 +120,37 @@
     <div class="container card">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Tooth Color Prediction</h1>
 
-        <div id="errorMessage" class="error-message hidden" role="alert" aria-live="polite">
-            <!-- Error messages will be displayed here -->
-        </div>
+        <div id="errorMessage" class="error-message hidden" role="alert" aria-live="polite"></div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
                 <label for="serialNumber" class="block text-gray-700 text-sm font-medium mb-2">Tooth Serial Number</label>
-                <input type="number" id="serialNumber" class="input-field" placeholder="e.g., 12345" required>
+                <select id="serialNumber" class="input-field">
+                    <option value="">-- Select Serial --</option>
+                    <option value="0">A2-G2</option>
+                    <option value="1">A2-M2</option>
+                    <option value="2">A2-R2</option>
+                </select>
             </div>
             <div>
                 <label for="locationNumber" class="block text-gray-700 text-sm font-medium mb-2">Tooth Location Number</label>
-                <input type="number" id="locationNumber" class="input-field" placeholder="e.g., 6" required>
+                <select id="locationNumber" class="input-field">
+                    <option value="">-- Select Location --</option>
+                    <option value="11">11</option>
+                    <option value="21">21</option>
+                    <option value="12">12</option>
+                    <option value="22">22</option>
+                    <option value="13">13</option>
+                    <option value="23">23</option>
+                    <option value="16">16</option>
+                    <option value="26">26</option>
+                    <option value="17">17</option>
+                    <option value="27">27</option>
+                </select>
             </div>
             <div class="md:col-span-2">
                 <label for="size" class="block text-gray-700 text-sm font-medium mb-2">Size (e.g., mm)</label>
-                <input type="number" id="size" class="input-field" step="0.01" placeholder="e.g., 15.75" required>
+                <input type="number" id="size" class="input-field" step="0.01" placeholder="e.g., 15.75">
             </div>
         </div>
 
@@ -146,73 +159,52 @@
                 <span id="buttonText">Predict Color</span>
                 <div id="loadingSpinner" class="loading-spinner hidden"></div>
             </button>
-            <button id="clearButton" class="clear-button flex items-center justify-center gap-2">
-                Clear
-            </button>
+            <button id="clearButton" class="clear-button flex items-center justify-center gap-2">Clear</button>
         </div>
 
         <div id="predictionResults" class="hidden fade-in" aria-live="polite">
             <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Prediction Results</h2>
             <div class="space-y-4">
-                <div class="result-item">
-                    <span class="result-label">L* (Lightness):</span>
-                    <span id="L_star" class="result-value">--</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">a* (Red/Green):</span>
-                    <span id="a_star" class="result-value">--</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">b* (Yellow/Blue):</span>
-                    <span id="b_star" class="result-value">--</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">C* (Chroma/Saturation):</span>
-                    <span id="C_star" class="result-value">--</span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">h (Hue Angle):</span>
-                    <span id="h_angle" class="result-value">--</span>
-                </div>
+                <div class="result-item"><span class="result-label">L* (Lightness):</span><span id="L_star" class="result-value">--</span></div>
+                <div class="result-item"><span class="result-label">a* (Red/Green):</span><span id="a_star" class="result-value">--</span></div>
+                <div class="result-item"><span class="result-label">b* (Yellow/Blue):</span><span id="b_star" class="result-value">--</span></div>
+                <div class="result-item"><span class="result-label">C* (Chroma/Saturation):</span><span id="C_star" class="result-value">--</span></div>
+                <div class="result-item"><span class="result-label">h (Hue Angle):</span><span id="h_angle" class="result-value">--</span></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Get references to DOM elements
         const serialNumberInput = document.getElementById('serialNumber');
         const locationNumberInput = document.getElementById('locationNumber');
         const sizeInput = document.getElementById('size');
         const predictButton = document.getElementById('predictButton');
-        const clearButton = document.getElementById('clearButton'); /* New Clear button */
+        const clearButton = document.getElementById('clearButton');
         const buttonText = document.getElementById('buttonText');
         const loadingSpinner = document.getElementById('loadingSpinner');
         const predictionResultsDiv = document.getElementById('predictionResults');
         const errorMessageDiv = document.getElementById('errorMessage');
 
-        // Result display elements
         const L_star_span = document.getElementById('L_star');
         const a_star_span = document.getElementById('a_star');
         const b_star_span = document.getElementById('b_star');
         const C_star_span = document.getElementById('C_star');
         const h_angle_span = document.getElementById('h_angle');
 
-        // Function to show/hide loading spinner and update button text
         function toggleLoading(isLoading) {
             if (isLoading) {
                 buttonText.textContent = 'Predicting...';
                 loadingSpinner.classList.remove('hidden');
                 predictButton.disabled = true;
-                clearButton.disabled = true; /* Disable clear button during prediction */
+                clearButton.disabled = true;
             } else {
                 buttonText.textContent = 'Predict Color';
                 loadingSpinner.classList.add('hidden');
                 predictButton.disabled = false;
-                clearButton.disabled = false; /* Re-enable clear button */
+                clearButton.disabled = false;
             }
         }
 
-        // Function to display error messages with optional input highlighting
         function showErrorMessage(message, inputElement = null) {
             errorMessageDiv.textContent = message;
             errorMessageDiv.classList.remove('hidden');
@@ -221,17 +213,14 @@
             }
         }
 
-        // Function to hide error messages and clear input error styling
         function hideErrorMessage() {
             errorMessageDiv.classList.add('hidden');
             errorMessageDiv.textContent = '';
-            // Remove error styling from all input fields
             document.querySelectorAll('.input-field').forEach(input => {
                 input.classList.remove('input-error');
             });
         }
 
-        // Function to clear prediction results and hide the section
         function clearResults() {
             L_star_span.textContent = '--';
             a_star_span.textContent = '--';
@@ -239,95 +228,83 @@
             C_star_span.textContent = '--';
             h_angle_span.textContent = '--';
             predictionResultsDiv.classList.add('hidden');
-            predictionResultsDiv.classList.remove('fade-in'); /* Remove animation class for next appearance */
+            predictionResultsDiv.classList.remove('fade-in');
         }
 
-        // Function to clear all input fields
         function clearInputs() {
             serialNumberInput.value = '';
             locationNumberInput.value = '';
             sizeInput.value = '';
             hideErrorMessage();
-            clearResults();
         }
 
-        // Event listener for the predict button
         predictButton.addEventListener('click', async () => {
-            hideErrorMessage(); // Clear previous errors
-            clearResults(); // Clear previous results
+            hideErrorMessage();
+            clearResults();
 
-            // Get input values
-            const serialNumber = serialNumberInput.value.trim();
-            const locationNumber = locationNumberInput.value.trim();
+            const serialNumber = serialNumberInput.value;
+            const locationNumber = locationNumberInput.value;
             const size = sizeInput.value.trim();
 
-            // Basic client-side validation with specific feedback
-            if (!serialNumber) {
-                showErrorMessage('Please enter the Tooth Serial Number.', serialNumberInput);
+            if (serialNumber === "") {
+                showErrorMessage('Please select the Tooth Serial Number.', serialNumberInput);
                 return;
             }
-            if (!locationNumber) {
-                showErrorMessage('Please enter the Tooth Location Number.', locationNumberInput);
+            if (locationNumber === "") {
+                showErrorMessage('Please select the Tooth Location Number.', locationNumberInput);
                 return;
             }
             if (!size) {
                 showErrorMessage('Please enter the Size.', sizeInput);
                 return;
             }
+            if (parseFloat(size) <= 0) {
+                showErrorMessage('Size must be a positive number.', sizeInput);
+                return;
+            }
 
-            // Convert to numbers for sending to backend (backend will re-validate types)
             const payload = {
                 serial_number: parseInt(serialNumber),
                 location_number: parseInt(locationNumber),
                 size: parseFloat(size)
             };
-            console.log('data:', payload);
 
-            toggleLoading(true); // Show loading spinner
+            toggleLoading(true);
 
             try {
-                // IMPORTANT: Replace with your actual backend API URL
-                // If running Flask locally, it's typically http://127.0.0.1:5000/predict
-                // For deployed apps, it will be your App Platform/Render service URL
-                const backendUrl = 'https://majd-accuacal-uk.onrender.com/predict'; // <<<<<<< CHANGE THIS FOR DEPLOYMENT
-
+                const backendUrl = 'https://majd-accuacal-uk.onrender.com/predict';
                 const response = await fetch(backendUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
-                console.log("Results:",result);
                 if (response.ok) {
-                    // Display predictions
                     const predictions = result.predictions;
                     L_star_span.textContent = predictions.L_star;
                     a_star_span.textContent = predictions.a_star;
                     b_star_span.textContent = predictions.b_star;
                     C_star_span.textContent = predictions.C_star;
                     h_angle_span.textContent = predictions.h_angle;
-                    predictionResultsDiv.classList.remove('hidden'); // Show results section
-                    predictionResultsDiv.classList.add('fade-in'); // Trigger fade-in animation
-                    clearInputs(); // Clear inputs after successful prediction
+                    predictionResultsDiv.classList.remove('hidden');
+                    predictionResultsDiv.classList.add('fade-in');
+                    
                 } else {
-                    // Handle API errors
                     showErrorMessage(result.error || 'An unknown error occurred during prediction.');
                 }
             } catch (error) {
-                // Handle network errors or issues with the fetch request
                 console.error('Error fetching prediction:', error);
-                showErrorMessage('Failed to connect to the prediction service. Please ensure the backend is running and the URL is correct.');
+                showErrorMessage('Failed to connect to the prediction service.');
             } finally {
-                console.error('Error fetching:', error);
-                toggleLoading(false); // Hide loading spinner
+                toggleLoading(false);
             }
         });
 
-        // Event listener for the clear button
-        clearButton.addEventListener('click', clearInputs);
+        clearButton.addEventListener('click', () => {
+            clearInputs();
+            clearResults();
+        });
     </script>
 </body>
 </html>
