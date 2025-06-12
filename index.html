@@ -320,6 +320,7 @@
                 console.error('Error fetching prediction:', error);
                 showErrorMessage('Failed to connect to the prediction service. Please ensure the backend is running and the URL is correct.');
             } finally {
+                console.error('Error fetching:', error);
                 toggleLoading(false); // Hide loading spinner
             }
         });
